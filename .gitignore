@@ -1,0 +1,50 @@
+# Secrets — NEVER commit these
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg-info/
+.installed.cfg
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+ENV/
+
+# Data (user uploads + history — keep gitkeep only)
+data/uploads/*
+data/history/*
+data/kb/*.pdf
+data/kb/*.txt
+data/kb/*.db
+data/kb/*.chunks.txt
+data/kb/kb_meta.json
+!data/uploads/.gitkeep
+!data/history/.gitkeep
+!data/kb/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+*.pid

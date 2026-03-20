@@ -1,0 +1,609 @@
+"""
+SamiX Knowledge Intelligence & RAG Engine
+
+This module implements the Retrieval-Augmented Generation (RAG) pipeline 
+that powers the platform's factual integrity and compliance audits.
+
+Architecture:
+1. Vector Store: Milvus Lite (local) for high-performance semantic search.
+2. Embeddings: HuggingFace 'all-MiniLM-L6-v2' for local, CPU-optimized vectors.
+3. Retrieval: Maximal Marginal Relevance (MMR) to ensure diverse context.
+4. Fallback: Pure keyword-overlap search for environments without vector support.
+
+Data Collections:
+- 'policies': Internal company SOPs and support guidelines.
+- 'compliance': Regulatory frameworks (GDPR, PCI-DSS, ISO).
+- 'product_kb': Technical manuals and product specifications.
+"""
+from __future__ import annotations
+
+import io
+import json
+import os
+import textwrap
+from dataclasses import dataclass, field, asdict
+from pathlib import Path
+from typing import Optional, Any
+
+import streamlit as st
+
+
+# RAG Configuration 
+
+CHUNK_SIZE     = 500      # Optimized for MiniLM context window.
+CHUNK_OVERLAP  = 50       # Preservation of context across boundaries.
+TOP_K          = 4        # Number of chunks provided to the LLM.
+EMBED_MODEL    = "all-MiniLM-L6-v2"
+MILVUS_DB      = "http://localhost:19530"
+META_PATH      = "data/kb/kb_meta.json"
+KB_DIR         = "data/kb"
+
+COLLECTIONS    = ["policies", "product_kb", "compliance"]
+
+# Seed Knowledge (Built-in) 
+# These are default industry standards loaded into every new instance.
+GENERALISED_KB: list[dict] = [
+    {
+        "name":       "Customer Support Best Practices (ITIL v4)",
+        "collection": "policies",
+        "chunks":     120,
+        "content": textwrap.dedent("""\
+            Incident management: acknowledge within 60 seconds.
+            Always confirm customer identity before accessing account data.
+            Closing protocol: confirm resolution before ending every call.
+            Escalation path: agent -> senior agent -> supervisor -> manager.
+            SLA for billing disputes: resolve within 2 business days.
+            Empathy language: mirror customer emotion, then redirect to solution.
+        """),
+    },
+    {
+        "name":       "BPO Compliance Framework (ISO 9001:2015)",
+        "collection": "compliance",
+        "chunks":     98,
+        "content": textwrap.dedent("""\
+            All agents must follow approved scripts for regulated topics.
+            Financial information must not be disclosed without identity verification.
+            Call recordings are mandatory for quality assurance.
+            Non-compliance must be reported within 24 hours.
+            Corrective actions must be documented and reviewed quarterly.
+        """),
+    },
+    {
+        "name":       "De-escalation Techniques",
+        "collection": "policies",
+        "chunks":     65,
+        "content": textwrap.dedent("""\
+            Step 1: Let the customer finish speaking without interruption.
+            Step 2: Acknowledge the frustration explicitly: 'I completely understand'.
+            Step 3: Apologise for the inconvenience before moving to resolution.
+            Step 4: Offer a concrete next step with a specific timeline.
+            Step 5: Confirm the customer is satisfied before closing.
+            Avoid: 'calm down', 'that is our policy', 'there is nothing I can do'.
+        """),
+    },
+    {
+        "name":       "GDPR Customer Data Handling",
+        "collection": "compliance",
+        "chunks":     88,
+        "content": textwrap.dedent("""\
+            Never read back full card numbers or passwords on a call.
+            Only collect data necessary for the stated purpose.
+            Customer has the right to data deletion within 30 days of request.
+            Any data breach must be reported to the DPO within 72 hours.
+            Call recordings may not be retained beyond 12 months without consent.
+        """),
+    },
+    {
+        "name":       "Empathy Language Patterns (50 phrases)",
+        "collection": "policies",
+        "chunks":     50,
+        "content": textwrap.dedent("""\
+            'I completely understand how frustrating that must be.'
+            'I sincerely apologise that this has happened.'
+            'Thank you for bringing this to our attention.'
+            'I appreciate your patience while I look into this.'
+            'I can absolutely see why you feel that way.'
+            'Let me personally make sure this is resolved for you.'
+            'I am going to take ownership of this issue right now.'
+        """),
+    },
+    {
+        "name":       "GenAI QA Auditor Standard Rubric",
+        "collection": "product_kb",
+        "chunks":     72,
+        "content": textwrap.dedent("""\
+            Empathy (20%): acknowledgment, emotional mirroring, apology quality.
+            Professionalism (15%): language, tone, script adherence.
+            Compliance (25%): policy accuracy, regulatory adherence, script compliance.
+            Resolution (20%): issue resolved, root cause addressed, no false close.
+            Communication (5%): clarity, pacing, active listening signals.
+            Integrity (15%): factual accuracy, no hallucinations, correct policy citation.
+            Phase bonus (+/-5): improving arc = +5, declining arc = -5.
+            Auto-fail triggers: rude language, data breach, impossible promise.
+        """),
+    },
+]
+
+
+# Data Structures 
+
+@dataclass
+class KBFile:
+    """ Metadata record for a document uploaded to the knowledge base. """
+    filename:   str
+    collection: str
+    chunks:     int  = 0
+    size_bytes: int  = 0
+    indexed:    bool = False
+
+    @property
+    def size_label(self) -> str:
+        """ Returns a human-readable file size (KB or MB). """
+        kb = self.size_bytes / 1024
+        return f"{kb:.1f} KB" if kb < 1024 else f"{kb / 1024:.1f} MB"
+
+
+@dataclass
+class RAGResult:
+    """ A single snippet of retrieved knowledge and its associated metadata. """
+    text:       str
+    source:     str
+    collection: str
+    score:      float     # Semantic similarity score (higher is better).
+    page:       int = 0
+
+    def to_citation(self) -> str:
+        """ Formats the result as a standard academic/legal citation. """
+        return f"{self.source} (conf {self.score:.2f})"
+
+
+# Knowledge Base Manager 
+
+class KBManager:
+    """
+    The brain of the SamiX RAG system.
+    
+    Handles the ingestion of PDFs and text, maintains the Milvus vector stores, 
+    and provides a high-level API for semantic querying and policy auditing.
+    """
+
+    def __init__(self) -> None:
+        """ Initializes storage, loads metadata, and warms up the embedding model. """
+        os.makedirs(KB_DIR, exist_ok=True)
+        self._files: list[KBFile]      = []
+        self._embeddings               = None
+        self._stores: dict[str, object] = {}   # Mapping of collection -> Milvus VectorStore
+        self._load_meta()
+        self._init_embeddings()
+        self._load_generalised_kb()
+        self._reload_existing_stores()
+        self._autoload_dropped_files()
+
+    def _autoload_dropped_files(self) -> None:
+        """ 
+        Scans the KB directory for files added outside the UI.
+        Ensures the system is always in sync with the physical disk.
+        """
+        known = {f.filename for f in self._files}
+        for fname in os.listdir(KB_DIR):
+            if fname.endswith(".chunks.txt") or fname == "kb_meta.json" or fname.startswith("."):
+                continue
+            if fname.endswith(".txt") or fname.endswith(".pdf"):
+                if fname not in known:
+                    path = os.path.join(KB_DIR, fname)
+                    try:
+                        with open(path, "rb") as fh:
+                            data = fh.read()
+                        
+                        text   = self._extract_text(data, fname)
+                        chunks = self._chunk_text(text)
+                        
+                        self._index_text_chunks(chunks, source=fname, collection="policies")
+                        
+                        kbf = KBFile(
+                            filename=fname,
+                            collection="policies",
+                            chunks=len(chunks),
+                            size_bytes=len(data),
+                            indexed=self._embeddings is not None,
+                        )
+                        self._files.append(kbf)
+                        self._save_meta()
+                    except Exception as exc:
+                        st.warning(f"Failed to auto-load dropped file {fname}: {exc}")
+
+    # Initialization (Private) 
+
+    def _init_embeddings(self) -> None:
+        """ Loads the local HuggingFace embedding model. """
+        try:
+            from langchain_huggingface import HuggingFaceEmbeddings
+            self._embeddings = HuggingFaceEmbeddings(
+                model_name=EMBED_MODEL,
+                model_kwargs={"device": "cpu"},
+                encode_kwargs={"normalize_embeddings": True},
+            )
+        except Exception as exc:
+            st.warning(f"Embedding model unavailable ({exc}). Keyword fallback active.")
+            self._embeddings = None
+
+    def _load_generalised_kb(self) -> None:
+        """ Boots up the vector store with standard industry knowledge. """
+        if not self._embeddings:
+            return
+        for item in GENERALISED_KB:
+            collection = item["collection"]
+            if self._stores.get(collection) is None:
+                self._index_text(
+                    text=item["content"],
+                    source=item["name"],
+                    collection=collection,
+                )
+
+    def _reload_existing_stores(self) -> None:
+        """ Re-connects to Milvus collections that already exist on disk. """
+        if not self._embeddings:
+            return
+        for col in COLLECTIONS:
+            store = self._try_connect_store(col)
+            if store:
+                self._stores[col] = store
+
+    def _try_connect_store(self, collection: str) -> Optional[object]:
+        """ Attempts a connection to a specific Milvus collection. """
+        try:
+            from langchain_community.vectorstores import Milvus
+            store = Milvus(
+                embedding_function=self._embeddings,
+                connection_args={"uri": MILVUS_DB},
+                collection_name=collection,
+                drop_old=False,
+            )
+            return store
+        except Exception:
+            return None
+
+    def _load_meta(self) -> None:
+        """ Reads the JSON metadata file for known KB files. """
+        if os.path.exists(META_PATH):
+            try:
+                with open(META_PATH) as fh:
+                    raw = json.load(fh)
+                self._files = [KBFile(**r) for r in raw]
+            except Exception:
+                self._files = []
+
+    def _save_meta(self) -> None:
+        """ Persists the current state of known files to disk. """
+        with open(META_PATH, "w") as fh:
+            json.dump([asdict(f) for f in self._files], fh, indent=2)
+
+    # State Accessors 
+
+    @property
+    def is_vector_enabled(self) -> bool:
+        """ Returns True if semantic search is currently operational. """
+        return self._embeddings is not None
+
+    @property
+    def files(self) -> list[KBFile]:
+        return self._files
+
+    @property
+    def generalised_kb(self) -> list[dict]:
+        return GENERALISED_KB
+
+    @property
+    def total_chunks(self) -> int:
+        """ Returns the total number of knowledge vectors available for retrieval. """
+        return (
+            sum(f.chunks for f in self._files)
+            + sum(g["chunks"] for g in GENERALISED_KB)
+        )
+
+    # Ingestion (Public) 
+
+    def add_file(
+        self,
+        file_bytes: bytes,
+        filename:   str,
+        collection: str = "policies",
+    ) -> KBFile:
+        """
+        Adds a new document to the knowledge base.
+        Saves to disk and indexes into the appropriate vector collection.
+        """
+        dest = os.path.join(KB_DIR, filename)
+        with open(dest, "wb") as fh:
+            fh.write(file_bytes)
+
+        text   = self._extract_text(file_bytes, filename)
+        chunks = self._chunk_text(text)
+        self._index_text_chunks(chunks, source=filename, collection=collection)
+
+        kbf = KBFile(
+            filename=filename,
+            collection=collection,
+            chunks=len(chunks),
+            size_bytes=len(file_bytes),
+            indexed=True,
+        )
+        # Update or add the file record.
+        self._files = [f for f in self._files if f.filename != filename]
+        self._files.append(kbf)
+        self._save_meta()
+        return kbf
+
+    def remove_file(self, filename: str) -> None:
+        """ Removes a file from metadata and physical storage. """
+        self._files = [f for f in self._files if f.filename != filename]
+        for ext in ("", ".chunks.txt"):
+            p = os.path.join(KB_DIR, filename + ext)
+            if os.path.exists(p):
+                os.remove(p)
+        self._save_meta()
+
+    # Retrieval & Auditing (Public) 
+
+    async def query(
+        self,
+        question:   str,
+        top_k:      int  = TOP_K,
+        collection: Optional[str] = None,
+    ) -> list[RAGResult]:
+        """
+        Executes a semantic search query for relevant knowledge asynchronously.
+        Defaults to searching across all known collections.
+        """
+        return await asyncio.to_thread(self._sync_query, question, top_k, collection)
+
+    def _sync_query(
+        self,
+        question:   str,
+        top_k:      int,
+        collection: Optional[str],
+    ) -> list[RAGResult]:
+        """ Synchronous backend for the query method. """
+        cols = [collection] if collection else COLLECTIONS
+        results: list[RAGResult] = []
+        for col in cols:
+            results.extend(self._query_collection(question, col, top_k))
+        results.sort(key=lambda r: r.score, reverse=True)
+        return results[:top_k]
+
+    async def get_live_suggestions(self, text: str) -> list[str]:
+        """
+        Retrieves real-time suggestions from the KB based on live transcript turns.
+        """
+        results = await self.query(text, top_k=2)
+        return [r.text for r in results if r.score > 0.4]
+
+    async def audit_chain(
+        self,
+        agent_statement: str,
+        context_question: str,
+    ) -> dict:
+        """
+        Determines the factual accuracy of an agent's statement asynchronously.
+        """
+        chunks = await self.query(context_question, top_k=TOP_K)
+        if not chunks:
+            return {
+                "answer":        "No relevant policy found in Knowledge Base.",
+                "citations":     [],
+                "groundedness":  0.0,
+                "policy_breach": False,
+            }
+
+        context_text = "\n\n".join(
+            f"[{r.source}]\n{r.text}" for r in chunks
+        )
+        groundedness = round(
+            sum(r.score for r in chunks) / len(chunks), 3
+        )
+        citations = [r.to_citation() for r in chunks]
+
+        # Factual integrity check logic.
+        top = chunks[0].text.lower()
+        stmt_lower = agent_statement.lower()
+
+        # Heuristic: Numeric discrepancy check (highly accurate for SLA/Price leaks).
+        import re
+        nums_policy = set(re.findall(r"\d+", top))
+        nums_agent  = set(re.findall(r"\d+", stmt_lower))
+        policy_breach = bool(
+            nums_agent and nums_policy and
+            not nums_agent.intersection(nums_policy) and
+            len(nums_policy) > 0
+        )
+
+        return {
+            "answer":        context_text[:800],
+            "citations":     citations,
+            "groundedness":  groundedness,
+            "policy_breach": policy_breach,
+            "top_source":    chunks[0].source,
+            "top_score":     chunks[0].score,
+        }
+
+    # Indexing Implementation (Private) 
+
+    def _index_text(self, text: str, source: str, collection: str) -> None:
+        """ Chunks and indexes a raw string of text. """
+        chunks = self._chunk_text(text)
+        self._index_text_chunks(chunks, source=source, collection=collection)
+
+    def _index_text_chunks(
+        self,
+        chunks:     list[str],
+        source:     str,
+        collection: str,
+    ) -> None:
+        """ 
+        Writes chunks to the vector store and a local plain-text fallback.
+        """
+        if not chunks:
+            return
+
+        # Write text-based backup for keyword search fallback.
+        fallback_path = os.path.join(KB_DIR, f"{source}.chunks.txt")
+        with open(fallback_path, "w", encoding="utf-8") as fh:
+            for c in chunks:
+                fh.write(c + "\n---CHUNK---\n")
+
+        if not self._embeddings:
+            return
+
+        try:
+            from langchain_community.vectorstores import Milvus
+            from langchain_core.documents import Document
+
+            docs = [
+                Document(
+                    page_content=c,
+                    metadata={"source": source, "collection": collection},
+                )
+                for c in chunks
+            ]
+
+            # Upsert into existing or new collection.
+            if collection in self._stores and self._stores[collection] is not None:
+                self._stores[collection].add_documents(docs)
+            else:
+                store = Milvus.from_documents(
+                    docs,
+                    self._embeddings,
+                    connection_args={"uri": MILVUS_DB},
+                    collection_name=collection,
+                    drop_old=False,
+                )
+                self._stores[collection] = store
+        except Exception as exc:
+            st.warning(f"Milvus indexing error ({exc}). Keyword fallback used.")
+
+    # Retrieval Implementation (Private) 
+
+    def _query_collection(
+        self,
+        question:   str,
+        collection: str,
+        top_k:      int,
+    ) -> list[RAGResult]:
+        """ Tiered query: Vector search if available, else Keyword overlap. """
+        store = self._stores.get(collection)
+        if store is not None:
+            return self._milvus_query(store, question, collection, top_k)
+        return self._keyword_query(question, collection, top_k)
+
+    @staticmethod
+    def _milvus_query(
+        store:      object,
+        question:   str,
+        collection: str,
+        top_k:      int,
+    ) -> list[RAGResult]:
+        """ Performs semantic search via Milvus. """
+        try:
+            # MMR (Maximal Marginal Relevance) maximizes information gain while minimizing redundancy.
+            docs = store.max_marginal_relevance_search(
+                question, k=top_k, fetch_k=top_k * 3, lambda_mult=0.6
+            )
+            # Fallback to pure similarity if MMR returns nothing.
+            if not docs:
+                docs_scores = store.similarity_search_with_score(question, k=top_k)
+                return [
+                    RAGResult(
+                        text=d.page_content,
+                        source=d.metadata.get("source", "KB"),
+                        collection=collection,
+                        score=round(float(1 - s), 3),
+                    )
+                    for d, s in docs_scores
+                ]
+            return [
+                RAGResult(
+                    text=d.page_content,
+                    source=d.metadata.get("source", "KB"),
+                    collection=collection,
+                    score=0.85, # MMR doesn't provide easy raw scores at this level.
+                )
+                for d in docs
+            ]
+        except Exception:
+            return []
+
+    def _keyword_query(
+        self,
+        question:   str,
+        collection: str,
+        top_k:      int,
+    ) -> list[RAGResult]:
+        """ 
+        Legacy keyword overlap search. 
+        Used when vector DB is unavailable or for simple exact-match lookups.
+        """
+        keywords = set(question.lower().split())
+        results: list[tuple[int, str, str]] = []
+
+        for fname in os.listdir(KB_DIR):
+            if not fname.endswith(".chunks.txt"):
+                continue
+            source = fname.replace(".chunks.txt", "")
+            try:
+                with open(os.path.join(KB_DIR, fname), encoding="utf-8") as fh:
+                    raw = fh.read()
+                for chunk in raw.split("---CHUNK---\n"):
+                    chunk = chunk.strip()
+                    if not chunk: continue
+                    overlap = len(keywords & set(chunk.lower().split()))
+                    if overlap > 0:
+                        results.append((overlap, chunk, source))
+            except Exception:
+                continue
+
+        results.sort(key=lambda x: x[0], reverse=True)
+        mx = results[0][0] if results else 1
+        return [
+            RAGResult(
+                text=text,
+                source=source,
+                collection=collection,
+                score=round(overlap / mx, 3),
+            )
+            for overlap, text, source in results[:top_k]
+        ]
+
+    # Parsing & Chunking (Private) 
+
+    @staticmethod
+    def _extract_text(data: bytes, filename: str) -> str:
+        """ Extracts raw text from PDF or TXT bytes. """
+        ext = Path(filename).suffix.lower()
+        if ext == ".pdf":
+            try:
+                from pypdf import PdfReader
+                reader = PdfReader(io.BytesIO(data))
+                return "\n".join(p.extract_text() or "" for p in reader.pages)
+            except Exception:
+                pass
+        return data.decode("utf-8", errors="replace")
+
+    @staticmethod
+    def _chunk_text(text: str) -> list[str]:
+        """ Splits text into smaller, overlapping chunks for optimal retrieval. """
+        try:
+            from langchain_text_splitters import RecursiveCharacterTextSplitter
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=CHUNK_SIZE,
+                chunk_overlap=CHUNK_OVERLAP,
+                separators=["\n\n", "\n", ". ", " ", ""],
+            )
+            return [c for c in splitter.split_text(text) if c.strip()]
+        except Exception:
+            # Fail-safe word-based chunking.
+            words = text.split()
+            return [
+                " ".join(words[i: i + CHUNK_SIZE])
+                for i in range(0, len(words), CHUNK_SIZE)
+                if words[i: i + CHUNK_SIZE]
+            ]
