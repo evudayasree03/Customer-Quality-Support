@@ -21,21 +21,21 @@ from src.utils.history_manager import HistoryManager
 from src.utils.kb_manager      import KBManager
 
 
-def _line(x, y, colour="#8B5CF6", height=180, y_min=None, y_max=None, fill=True):
+def _line(x, y, colour="#EB643E", height=180, y_min=None, y_max=None, fill=True):
     fig = go.Figure(go.Scatter(
         x=x, y=y, mode="lines+markers",
         line=dict(color=colour, width=2),
         marker=dict(size=4, color=colour),
         fill="tozeroy" if fill else None,
-        fillcolor="rgba(139,92,246,.06)" if fill else None,
+        fillcolor="rgba(235,100,62,0.04)" if fill else None,
     ))
     fig.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(15,23,42,.6)",
-        font=dict(family="IBM Plex Mono", color="#94A3B8", size=9),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#FFFFFF",
+        font=dict(family="Sora, sans-serif", color="#64748B", size=9),
         margin=dict(l=0,r=0,t=4,b=0), height=height,
         yaxis=dict(
             range=[y_min, y_max] if y_min is not None else None,
-            gridcolor="rgba(139,92,246,.08)",
+            gridcolor="rgba(0,0,0,0.05)",
         ),
         xaxis=dict(gridcolor="rgba(0,0,0,0)"),
         showlegend=False,
@@ -43,20 +43,20 @@ def _line(x, y, colour="#8B5CF6", height=180, y_min=None, y_max=None, fill=True)
     return fig
 
 
-def _bar(x, y, colour="#8B5CF6", height=180, y_min=None, y_max=None):
+def _bar(x, y, colour="#EB643E", height=180, y_min=None, y_max=None):
     fig = go.Figure(go.Bar(
         x=x, y=y,
         marker_color=colour,
-        marker_line_color="rgba(139,92,246,.4)",
+        marker_line_color="rgba(235,100,62,0.3)",
         marker_line_width=1,
     ))
     fig.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(15,23,42,.6)",
-        font=dict(family="IBM Plex Mono", color="#94A3B8", size=9),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#FFFFFF",
+        font=dict(family="Sora, sans-serif", color="#64748B", size=9),
         margin=dict(l=0,r=0,t=4,b=0), height=height,
         yaxis=dict(
             range=[y_min, y_max] if y_min is not None else None,
-            gridcolor="rgba(139,92,246,.08)",
+            gridcolor="rgba(0,0,0,0.05)",
         ),
         xaxis=dict(gridcolor="rgba(0,0,0,0)"),
         showlegend=False,
@@ -67,12 +67,12 @@ def _bar(x, y, colour="#8B5CF6", height=180, y_min=None, y_max=None):
 def _tbl_html(rows: list[tuple[str,str]]) -> str:
     items = "".join(
         f'<div style="display:flex;justify-content:space-between;'
-        f'padding:4px 0;border-bottom:1px solid rgba(139,92,246,.08);">'
+        f'padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05);">'
         f'<span style="color:#64748B;">{k}</span>'
-        f'<span style="color:#E2E8F0;">{v}</span></div>'
+        f'<span style="color:#212529;font-weight:500;">{v}</span></div>'
         for k, v in rows
     )
-    return f'<div style="font-family:IBM Plex Mono;font-size:.78rem;">{items}</div>'
+    return f'<div style="font-family:Sora,sans-serif;font-size:.78rem;">{items}</div>'
 
 
 DAYS = ["3/5","3/6","3/7","3/8","3/9","3/10","3/11",
@@ -149,7 +149,7 @@ class AdminPanel:
             fig2 = go.Figure(go.Pie(
                 labels=["Excellent","Good","Needs work","Fail"],
                 values=[18,41,28,13], hole=0.68,
-                marker_colors=["#10B981","#8B5CF6","#F59E0B","#EF4444"],
+                marker_colors=["#10B981","#EB643E","#F59E0B","#EF4444"],
             ))
             fig2.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)", showlegend=True,
@@ -163,14 +163,14 @@ class AdminPanel:
             st.markdown("##### Agent leaderboard")
             agents = [
                 ("Priya M.",89,"#10B981"),("Sarah C.",84,"#10B981"),
-                ("Tom R.",  81,"#8B5CF6"),("Alex K.", 65,"#EF4444"),
+                ("Tom R.",  81,"#EB643E"),("Alex K.", 65,"#EF4444"),
             ]
             for name, score, colour in agents:
                 cn, cb, cs = st.columns([2,5,1])
                 cn.caption(name)
                 cb.progress(score/100)
                 cs.markdown(
-                    f'<div style="font-family:IBM Plex Mono;font-size:.9rem;'
+                    f'<div style="font-family:Sora,sans-serif;font-size:.9rem;font-weight:600;'
                     f'color:{colour};">{score}</div>', unsafe_allow_html=True
                 )
 
@@ -331,11 +331,11 @@ class AdminPanel:
                 yaxis="y2",
             ))
             fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(15,23,42,.6)",
-                font=dict(family="IBM Plex Mono",color="#94A3B8",size=9),
-                legend=dict(bgcolor="rgba(30,41,59,.7)",font=dict(size=9)),
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#FFFFFF",
+                font=dict(family="Sora,sans-serif",color="#64748B",size=9),
+                legend=dict(bgcolor="rgba(255,255,255,.9)",font=dict(size=9,color="#212529")),
                 margin=dict(l=0,r=0,t=4,b=0), height=200,
-                yaxis=dict(gridcolor="rgba(139,92,246,.08)"),
+                yaxis=dict(gridcolor="rgba(0,0,0,0.05)"),
                 yaxis2=dict(overlaying="y",side="right",showgrid=False),
                 xaxis=dict(gridcolor="rgba(0,0,0,0)"),
             )
@@ -438,10 +438,10 @@ class AdminPanel:
                 if results:
                     for r in results:
                         st.markdown(
-                            f'<div class="glass-card" style="font-size:.8rem;">'
-                            f'<div style="color:#8B5CF6;font-family:IBM Plex Mono;font-size:.68rem;">'
+                            f'<div class="glass-card" style="font-size:.82rem;">'
+                            f'<div style="color:#EB643E;font-family:Sora,sans-serif;font-weight:600;font-size:.68rem;">'
                             f'{r.source} · {r.collection} · conf {r.score:.3f}</div>'
-                            f'<div style="color:#94A3B8;margin-top:4px;">{r.text[:200]}…</div>'
+                            f'<div style="color:#64748B;margin-top:6px;">{r.text[:200]}…</div>'
                             f'</div>', unsafe_allow_html=True
                         )
                 else:
@@ -450,7 +450,7 @@ class AdminPanel:
             # Indexed files list
             st.markdown("---")
             st.markdown("##### Indexed files")
-            col_colours = {"policies":"#8B5CF6","product_kb":"#10B981","compliance":"#F59E0B"}
+            col_colours = {"policies":"#EB643E","product_kb":"#10B981","compliance":"#F59E0B"}
             if self._kb.files:
                 for kbf in self._kb.files:
                     ci,cn,cc,cm,cd = st.columns([1,3,1,2,1])
@@ -459,7 +459,7 @@ class AdminPanel:
                     cn.write(kbf.filename)
                     colour = col_colours.get(kbf.collection,"#94A3B8")
                     cc.markdown(f'<div style="color:{colour};font-size:.72rem;'
-                                f'font-family:IBM Plex Mono;">{kbf.collection}</div>',
+                                f'font-family:Sora,sans-serif;font-weight:600;">{kbf.collection}</div>',
                                 unsafe_allow_html=True)
                     cm.caption(f"{kbf.chunks} chunks · {kbf.size_label}")
                     if cd.button("✕", key=f"del_{kbf.filename}"):
@@ -489,15 +489,15 @@ class AdminPanel:
 
             st.markdown("---")
             st.markdown("##### Generalised knowledge — auto-loaded")
-            col_colours = {"policies":"#8B5CF6","product_kb":"#10B981","compliance":"#F59E0B"}
+            col_colours = {"policies":"#EB643E","product_kb":"#10B981","compliance":"#F59E0B"}
             for item in self._kb.generalised_kb:
-                colour = col_colours.get(item["collection"],"#94A3B8")
+                colour = col_colours.get(item["collection"],"#64748B")
                 st.markdown(
-                    f'<div style="padding:4px 0;border-bottom:1px solid rgba(139,92,246,.1);'
-                    f'font-size:.78rem;color:#94A3B8;">'
+                    f'<div style="padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);'
+                    f'font-size:.8rem;color:#64748B;font-weight:500;">'
                     f'{item["name"]}'
-                    f'<span style="margin-left:6px;color:{colour};font-size:.68rem;">'
-                    f'{item["collection"]}</span></div>',
+                    f'<span style="margin-left:8px;color:{colour};font-size:.7rem;font-weight:700;">'
+                    f'{item["collection"].upper()}</span></div>',
                     unsafe_allow_html=True,
                 )
 
@@ -536,7 +536,7 @@ class AdminPanel:
                 x=DAYS,
                 y=[820,790,840,810,830,800,850,820,800,790,810,830,800,815],
                 name="Groq (ms)",
-                line=dict(color="#8B5CF6",width=2), marker=dict(size=4),
+                line=dict(color="#EB643E",width=2.5), marker=dict(size=4),
             ))
             fig.add_trace(go.Scatter(
                 x=DAYS,
@@ -545,11 +545,11 @@ class AdminPanel:
                 line=dict(color="#10B981",width=1.5,dash="dot"), marker=dict(size=3),
             ))
             fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(15,23,42,.6)",
-                font=dict(family="IBM Plex Mono",color="#94A3B8",size=9),
-                legend=dict(bgcolor="rgba(30,41,59,.7)",font=dict(size=9)),
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#FFFFFF",
+                font=dict(family="Sora,sans-serif",color="#64748B",size=9),
+                legend=dict(bgcolor="rgba(255,255,255,.9)",font=dict(size=9,color="#212529")),
                 margin=dict(l=0,r=0,t=4,b=0), height=300,
-                yaxis=dict(gridcolor="rgba(139,92,246,.08)"),
+                yaxis=dict(gridcolor="rgba(0,0,0,0.05)"),
                 xaxis=dict(gridcolor="rgba(0,0,0,0)"),
             )
             st.plotly_chart(fig, use_container_width=True)

@@ -69,24 +69,24 @@ def _sidebar_brand() -> None:
     with st.sidebar:
         # Logo placeholder
         st.markdown(
-            '<div style="width:80px;height:80px;border:2px dashed rgba(139,92,246,.35);'
+            '<div style="width:80px;height:80px;border:2px dashed rgba(235,100,62,.3);'
             'border-radius:12px;display:flex;align-items:center;justify-content:center;'
-            'background:rgba(139,92,246,.06);margin:0 auto 1rem auto;">'
-            '<span style="font-family:IBM Plex Mono;font-size:.65rem;'
-            'color:rgba(139,92,246,.5);letter-spacing:.08em;">LOGO</span></div>',
+            'background:rgba(235,100,62,.04);margin:0 auto 1.2rem auto;">'
+            '<span style="font-family:Sora;font-size:.65rem;font-weight:600;'
+            'color:rgba(235,100,62,.6);letter-spacing:.08em;">SAMIX</span></div>',
             unsafe_allow_html=True,
         )
         # Main Title (SamiX)
         st.markdown(
             '<div style="text-align:center;">'
-            '<div style="font-family:Bebas Neue,sans-serif;font-size:2rem;'
-            'color:#E2E8F0;letter-spacing:.03em;line-height:1;">'
-            'SAMI<span style="color:#8B5CF6;">X</span></div>'
-            '<div style="font-family:IBM Plex Mono;font-size:.65rem;'
-            'color:#8B5CF6;letter-spacing:.14em;margin-bottom:.3rem;">'
-            'THE ALL-SEEING EYE OF QUALITY</div>'
-            '<div style="font-family:IBM Plex Mono;font-size:.6rem;'
-            'color:#334155;letter-spacing:.25em;">ಸಮೀಕ್ಷೆ</div></div>',
+            '<div style="font-family:Bebas Neue,sans-serif;font-size:2.2rem;'
+            'color:#212529;letter-spacing:.02em;line-height:1;">'
+            'SAMI<span style="color:#EB643E;">X</span></div>'
+            '<div style="font-family:Sora,sans-serif;font-size:.68rem;font-weight:600;'
+            'color:#EB643E;letter-spacing:.12em;margin-bottom:.4rem;">'
+            'AI QUALITY INTELLIGENCE</div>'
+            '<div style="font-family:Sora,sans-serif;font-size:.6rem;font-weight:500;'
+            'color:#94A3B8;letter-spacing:.2em;">POWERED BY SARVINFO</div></div>',
             unsafe_allow_html=True,
         )
         st.markdown("<br>", unsafe_allow_html=True)
@@ -102,16 +102,16 @@ def _sidebar_brand() -> None:
             ("pydub",       "ACTIVE",True),
         ]
         st.markdown(
-            '<div style="font-family:IBM Plex Mono;font-size:.68rem;'
-            'color:#475569;letter-spacing:.1em;margin-bottom:.4rem;">SYSTEM STATUS</div>',
+            '<div style="font-family:Sora,sans-serif;font-size:.72rem;font-weight:600;'
+            'color:#64748B;letter-spacing:.1em;margin-bottom:.6rem;">SYSTEM STATUS</div>',
             unsafe_allow_html=True,
         )
         for svc, label, ok in statuses:
             colour = "#10B981" if ok else "#F59E0B"
             st.markdown(
                 f'<div style="display:flex;justify-content:space-between;'
-                f'font-family:IBM Plex Mono;font-size:.68rem;padding:2px 0;">'
-                f'<span style="color:#64748B;">{svc}</span>'
+                f'font-family:Sora,sans-serif;font-size:.7rem;padding:3px 0;font-weight:500;">'
+                f'<span style="color:#94A3B8;">{svc}</span>'
                 f'<span style="color:{colour};">{label}</span></div>',
                 unsafe_allow_html=True,
             )
@@ -119,10 +119,10 @@ def _sidebar_brand() -> None:
         st.divider()
         # User account info and Logout
         st.markdown(
-            f'<div style="font-family:IBM Plex Mono;font-size:.7rem;'
-            f'color:#94A3B8;margin-bottom:.5rem;">'
+            f'<div style="font-family:Sora,sans-serif;font-size:.72rem;'
+            f'color:#64748B;margin-bottom:.6rem;">'
             f'Signed in as<br>'
-            f'<span style="color:#8B5CF6;">{auth.current_user_name}</span></div>',
+            f'<span style="color:#EB643E;font-weight:600;">{auth.current_user_name}</span></div>',
             unsafe_allow_html=True,
         )
         auth.render_logout()

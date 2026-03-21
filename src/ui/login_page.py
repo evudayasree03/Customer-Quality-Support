@@ -55,39 +55,39 @@ class LoginPage:
         st.markdown(
             '<div style="'
             'width:120px;height:120px;'
-            'border:2px dashed rgba(139,92,246,0.4);'
-            'border-radius:16px;'
+            'border:2px dashed rgba(235,100,62,0.3);'
+            'border-radius:20px;'
             'display:flex;align-items:center;justify-content:center;'
-            'background:rgba(139,92,246,0.06);'
-            'margin-bottom:2rem;'
+            'background:rgba(235,100,62,0.04);'
+            'margin-bottom:2.5rem;'
             '">'
-            '<span style="font-size:0.7rem;font-family:IBM Plex Mono;'
-            'color:rgba(139,92,246,0.6);letter-spacing:0.1em;">LOGO</span>'
+            '<span style="font-size:0.75rem;font-family:Sora,sans-serif;font-weight:600;'
+            'color:rgba(235,100,62,0.6);letter-spacing:0.12em;">SAMIX</span>'
             '</div>',
             unsafe_allow_html=True,
         )
 
         # Title & Tagline 
         st.markdown(
-            '<div style="font-family:Bebas Neue,sans-serif;font-size:3.2rem;'
-            'color:#E2E8F0;line-height:0.9;letter-spacing:0.02em;margin-bottom:0.4rem;">'
-            'SAMI<span style="color:#8B5CF6;">X</span>'
+            '<div style="font-family:Bebas Neue,sans-serif;font-size:3.5rem;'
+            'color:#212529;line-height:0.9;letter-spacing:0.02em;margin-bottom:0.5rem;">'
+            'SAMI<span style="color:#EB643E;">X</span>'
             '</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<div style="font-family:IBM Plex Mono;font-size:0.8rem;'
-            'color:#8B5CF6;letter-spacing:0.18em;margin-bottom:1.2rem;">'
-            'THE ALL-SEEING EYE OF QUALITY'
+            '<div style="font-family:Sora,sans-serif;font-size:0.85rem;font-weight:600;'
+            'color:#EB643E;letter-spacing:0.15em;margin-bottom:1.5rem;">'
+            'AI QUALITY INTELLIGENCE'
             '</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<div style="font-family:IBM Plex Mono;font-size:0.72rem;'
-            'color:#475569;line-height:2;">'
+            '<div style="font-family:Sora,sans-serif;font-size:0.75rem;'
+            'color:#64748B;line-height:2.2;font-weight:500;">'
             'samiksha · ಸಮೀಕ್ಷೆ<br>'
             'GenAI-Powered Customer Support Auditor<br><br>'
-            'Groq &nbsp;·&nbsp; Deepgram &nbsp;·&nbsp; Whisper<br>'
+            '<span style="color:#EB643E;font-weight:600;">Groq</span> &nbsp;·&nbsp; <span style="color:#749CE2;font-weight:600;">Deepgram</span> &nbsp;·&nbsp; Whisper<br>'
             'Milvus Lite &nbsp;·&nbsp; pydub &nbsp;·&nbsp; LangChain'
             '</div>',
             unsafe_allow_html=True,
@@ -109,14 +109,14 @@ class LoginPage:
         """
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown(
-            '<div style="font-family:Bebas Neue;font-size:1.8rem;'
-            'color:#E2E8F0;letter-spacing:0.04em;margin-bottom:0.25rem;">'
+            '<div style="font-family:Bebas Neue;font-size:2.2rem;'
+            'color:#212529;letter-spacing:0.04em;margin-bottom:0.25rem;">'
             'Welcome</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<div style="font-family:IBM Plex Mono;font-size:0.72rem;'
-            'color:#475569;letter-spacing:0.12em;margin-bottom:1.5rem;">'
+            '<div style="font-family:Sora,sans-serif;font-size:0.75rem;font-weight:600;'
+            'color:#94A3B8;letter-spacing:0.1em;margin-bottom:1.5rem;">'
             'QUALITY AUDIT PLATFORM ACCESS'
             '</div>',
             unsafe_allow_html=True,

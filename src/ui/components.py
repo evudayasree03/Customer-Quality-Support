@@ -58,8 +58,8 @@ def render_gauge(value: float, title: str, max_val: float = 10.0) -> None:
                 "show": True,
                 "offsetCenter": [0, "75%"],
                 "fontSize": 11,
-                "color": "#94A3B8",
-                "fontFamily": "IBM Plex Mono",
+                "color": "#64748B",
+                "fontFamily": "Sora, sans-serif",
             },
             "detail": {
                 "show": True,
@@ -68,7 +68,7 @@ def render_gauge(value: float, title: str, max_val: float = 10.0) -> None:
                 "fontSize": 30,
                 "fontWeight": "bold",
                 "color": colour,
-                "fontFamily": "IBM Plex Mono",
+                "fontFamily": "Sora, sans-serif",
             },
             "data": [{"value": pct, "name": title.upper()}],
         }]
@@ -119,7 +119,7 @@ def render_dual_score_chart(scores: AuditScores) -> None:
         x=x_labels, y=agent_data,
         mode="lines+markers",
         name="Agent quality",
-        line=dict(color="#8B5CF6", width=2.5),
+        line=dict(color="#EB643E", width=3),
         marker=dict(
             size=7,
             color=["#EF4444" if v < 4 else "#F59E0B" if v < 7 else "#10B981" for v in agent_data],
@@ -133,12 +133,9 @@ def render_dual_score_chart(scores: AuditScores) -> None:
         x=x_labels, y=cust_data,
         mode="lines+markers",
         name="Customer sentiment",
-        line=dict(color="#6EE7B7", width=2, dash="dot"),
-        marker=dict(
-            size=5,
-            color=["#EF4444" if v < 4 else "#F59E0B" if v < 7 else "#6EE7B7" for v in cust_data],
-        ),
+        line=dict(color="#749CE2", width=2, dash="dot"),
         hovertemplate="<b>%{x}</b><br>Sentiment: %{y:.1f}/10<extra></extra>",
+        marker=dict(size=5, color="#749CE2")
     ))
 
     # Static fail threshold marker.
@@ -148,21 +145,21 @@ def render_dual_score_chart(scores: AuditScores) -> None:
 
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(15,23,42,0.6)",
-        font=dict(family="IBM Plex Mono", color="#94A3B8", size=10),
+        plot_bgcolor="#FFFFFF",
+        font=dict(family="Sora, sans-serif", color="#64748B", size=10),
         legend=dict(
-            bgcolor="rgba(30,41,59,0.7)",
-            bordercolor="rgba(139,92,246,0.2)",
-            font=dict(size=10),
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#EB643E",
+            font=dict(size=10, color="#212529"),
         ),
         xaxis=dict(
-            gridcolor="rgba(139,92,246,0.1)",
+            gridcolor="rgba(0,0,0,0.05)",
             zerolinecolor="rgba(0,0,0,0)",
         ),
         yaxis=dict(
             range=[0, 10.5],
             dtick=2,
-            gridcolor="rgba(139,92,246,0.1)",
+            gridcolor="rgba(0,0,0,0.05)",
             zerolinecolor="rgba(0,0,0,0)",
         ),
         margin=dict(l=0, r=0, t=10, b=0),
@@ -190,8 +187,8 @@ def render_transcript(
             wrong_map[wt.turn_number] = wt
 
     for turn in turns:
-        spk_colour = "#8B5CF6" if turn.speaker == "AGENT" else "#64748B"
-        bg_alpha   = "0.1"    if turn.speaker == "AGENT" else "0.05"
+        spk_colour = "#EB643E" if turn.speaker == "AGENT" else "#64748B"
+        bg_alpha   = "0.04"    if turn.speaker == "AGENT" else "0.02"
 
         col_spk, col_text = st.columns([1, 5])
         with col_spk:
@@ -206,10 +203,10 @@ def render_transcript(
             )
         with col_text:
             st.markdown(
-                f'<div style="background:rgba(139,92,246,{bg_alpha});'
+                f'<div style="background:rgba(235,100,62,{bg_alpha});'
                 f'border-left:2px solid {spk_colour};'
-                f'padding:8px 12px;border-radius:0 6px 6px 0;'
-                f'margin-bottom:3px;font-size:0.82rem;color:#E2E8F0;">'
+                f'padding:10px 14px;border-radius:0 8px 8px 0;'
+                f'margin-bottom:4px;font-size:0.85rem;color:#212529;">'
                 f'{turn.text}'
                 f'</div>',
                 unsafe_allow_html=True,
@@ -249,9 +246,9 @@ def render_wrong_turns(
         ):
             st.markdown("**What was said:**")
             st.markdown(
-                f'<div style="font-style:italic;background:rgba(30,41,59,0.8);'
-                f'border-left:3px solid #475569;padding:8px 12px;border-radius:0 6px 6px 0;'
-                f'color:#94A3B8;font-size:0.85rem;">'
+                f'<div style="font-style:italic;background:#F8FAFC;'
+                f'border-left:3px solid #E2E8F0;padding:10px 15px;border-radius:0 8px 8px 0;'
+                f'color:#64748B;font-size:0.88rem;">'
                 f'"{wt.agent_said}"'
                 f'</div>',
                 unsafe_allow_html=True,

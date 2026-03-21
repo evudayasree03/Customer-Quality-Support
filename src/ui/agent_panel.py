@@ -148,10 +148,10 @@ class AgentPanel:
                 col = "verdict-fail" if "Fail" in last.scores.verdict else "verdict-good"
                 st.markdown(
                     f'<div class="glass-card">'
-                    f'<div style="font-size:.72rem;color:#64748B;font-family:IBM Plex Mono;">'
+                    f'<div style="font-size:.72rem;color:#64748B;font-family:Sora,sans-serif;">'
                     f'{last.upload_time}</div>'
-                    f'<div style="font-size:.9rem;color:#E2E8F0;margin:4px 0;">{last.filename}</div>'
-                    f'<div class="{col}" style="font-family:IBM Plex Mono;font-size:.8rem;">'
+                    f'<div style="font-size:.95rem;font-weight:600;color:#212529;margin:4px 0;">{last.filename}</div>'
+                    f'<div class="{col}" style="font-family:Sora,sans-serif;font-weight:500;font-size:.82rem;">'
                     f'{last.scores.final_score:.0f}/100 · {last.scores.verdict}</div>'
                     f'</div>', unsafe_allow_html=True
                 )
@@ -196,7 +196,7 @@ class AgentPanel:
         vis = [c for c in df.columns if c != "session_id"]
 
         st.markdown(
-            '<div style="font-family:IBM Plex Mono;font-size:.7rem;color:#475569;margin-bottom:4px;">'
+            '<div style="font-family:Sora,sans-serif;font-size:.72rem;color:#64748B;margin-bottom:6px;font-weight:500;">'
             '✓ Uploaded filename = Stored history name (guaranteed identical)</div>',
             unsafe_allow_html=True,
         )
@@ -232,25 +232,25 @@ class AgentPanel:
         s = session.scores
         verdict_colour = (
             "#10B981" if s.final_score >= 80
-            else "#8B5CF6" if s.final_score >= 70
+            else "#EB643E" if s.final_score >= 70
             else "#F59E0B" if s.final_score >= 60
             else "#EF4444"
         )
         # Header bar
         st.markdown(
-            f'<div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);'
-            f'border-radius:10px;padding:14px 18px;margin-bottom:1rem;">'
-            f'<div style="font-family:IBM Plex Mono;font-size:.7rem;color:#64748B;margin-bottom:5px;">'
+            f'<div style="background:rgba(235,100,62,0.04);border:1px solid rgba(235,100,62,0.15);'
+            f'border-radius:12px;padding:16px 20px;margin-bottom:1.2rem;box-shadow:var(--shadow);">'
+            f'<div style="font-family:Sora,sans-serif;font-weight:600;font-size:.72rem;color:#64748B;margin-bottom:8px;letter-spacing:0.05em;">'
             f'SESSION · {session.upload_time}</div>'
-            f'<div style="font-size:1rem;font-weight:500;color:#E2E8F0;margin-bottom:7px;">'
+            f'<div style="font-size:1.15rem;font-weight:700;color:#212529;margin-bottom:8px;">'
             f'{session.filename}</div>'
-            f'<div style="display:flex;gap:18px;flex-wrap:wrap;'
-            f'font-family:IBM Plex Mono;font-size:.78rem;color:#94A3B8;">'
-            f'<span>Agent: <span style="color:{verdict_colour};">'
+            f'<div style="display:flex;gap:22px;flex-wrap:wrap;'
+            f'font-family:Sora,sans-serif;font-size:.82rem;color:#64748B;font-weight:500;">'
+            f'<span>Agent: <span style="color:{verdict_colour};font-weight:700;">'
             f'{s.final_score:.0f}/100</span></span>'
-            f'<span>Sentiment: <span style="color:#6EE7B7;">'
+            f'<span>Sentiment: <span style="color:#10B981;font-weight:700;">'
             f'{s.customer_overall:.1f}/10</span></span>'
-            f'<span>Violations: <span style="color:#EF4444;">{session.violations}</span></span>'
+            f'<span>Violations: <span style="color:#EF4444;font-weight:700;">{session.violations}</span></span>'
             f'<span>Turns: {len(session.transcript)}</span>'
             f'<span>Duration: {self._audio.duration_label(session.duration_sec)}</span>'
             f'</div></div>',
@@ -273,15 +273,15 @@ class AgentPanel:
             if session.summary_customer_query:
                 subs = "".join([f"<li style='margin-bottom:2px;'>{sq}</li>" for sq in session.summary_sub_queries])
                 html_summary = f'''
-                <div class="glass-card" style="font-size:.85rem;color:#94A3B8;line-height:1.7;">
-                    <strong style="color:#E2E8F0;">Primary Query:</strong> {session.summary_customer_query}<br>
-                    <strong style="color:#E2E8F0;">Expectation:</strong> {session.summary_customer_expectation}<br>
-                    <strong style="color:#E2E8F0;">Sub-Queries:</strong>
-                    <ul style="margin:4px 0 0 20px;padding:0;color:#94A3B8;font-size:0.8rem;">{subs}</ul>
+                <div class="glass-card" style="font-size:.88rem;color:#64748B;line-height:1.7;">
+                    <strong style="color:#212529;">Primary Query:</strong> {session.summary_customer_query}<br>
+                    <strong style="color:#212529;">Expectation:</strong> {session.summary_customer_expectation}<br>
+                    <strong style="color:#212529;">Sub-Queries:</strong>
+                    <ul style="margin:4px 0 0 20px;padding:0;color:#64748B;font-size:0.85rem;">{subs}</ul>
                 </div>
                 '''
             else:
-                html_summary = f'<div class="glass-card" style="font-size:.85rem;color:#94A3B8;line-height:1.7;">{display_text}</div>'
+                html_summary = f'<div class="glass-card" style="font-size:.88rem;color:#64748B;line-height:1.7;">{display_text}</div>'
                 
             st.markdown(html_summary, unsafe_allow_html=True)
 
@@ -322,11 +322,11 @@ class AgentPanel:
     # Sub-tab: Transcript 
     def _tab_transcript(self, session: AuditSession) -> None:
         c1, c2, c3 = st.columns([2,2,3])
-        c1.markdown('<span class="mono-badge" style="color:#8B5CF6;">● AGENT</span>',
+        c1.markdown('<span class="mono-badge">● AGENT</span>',
                     unsafe_allow_html=True)
-        c2.markdown('<span class="mono-badge" style="color:#64748B;">○ CUSTOMER</span>',
+        c2.markdown('<span class="mono-badge" style="color:#64748B;border-color:#E2E8F0;">○ CUSTOMER</span>',
                     unsafe_allow_html=True)
-        c3.markdown('<span style="font-size:.68rem;color:#475569;font-family:IBM Plex Mono;">'
+        c3.markdown('<span style="font-size:.68rem;color:#94A3B8;font-family:Sora,sans-serif;">'
                     'Deepgram diarization · conf 0.94</span>', unsafe_allow_html=True)
         st.markdown("")
         render_transcript(session.transcript, session.wrong_turns)
@@ -375,11 +375,11 @@ class AgentPanel:
             st.markdown("###### A: Query Resolution")
             resolved = session.engine_a.resolution_state
             fc_color = "#EF4444" if session.engine_a.is_fake_close else "#10B981"
-            st.markdown(f'<div class="glass-card" style="font-size:0.8rem; height: 160px; overflow-y: auto;">'
-                        f'<div style="color:#94A3B8; margin-bottom:4px;">Primary Query Handled: <br><b style="color:{"#10B981" if session.engine_a.primary_query_answered else "#EF4444"}">{session.engine_a.primary_query_answered}</b></div>'
-                        f'<div style="color:#94A3B8; margin-bottom:4px;">Sub-Queries Handled: <br><b style="color:{"#10B981" if session.engine_a.sub_queries_addressed else "#EF4444"}">{session.engine_a.sub_queries_addressed}</b></div>'
-                        f'<div style="color:#94A3B8; margin-bottom:4px;">Fake Close Detected: <br><b style="color:{fc_color}">{session.engine_a.is_fake_close}</b></div>'
-                        f'<div style="margin-top:8px;padding:4px;border-radius:4px;background:rgba(255,255,255,0.05);color:#E2E8F0;font-size:0.75rem;">State: {resolved}</div>'
+            st.markdown(f'<div class="glass-card" style="font-size:0.82rem; height: 160px; overflow-y: auto;">'
+                        f'<div style="color:#64748B; margin-bottom:4px;">Primary Query Handled: <br><b style="color:{"#10B981" if session.engine_a.primary_query_answered else "#EF4444"}">{session.engine_a.primary_query_answered}</b></div>'
+                        f'<div style="color:#64748B; margin-bottom:4px;">Sub-Queries Handled: <br><b style="color:{"#10B981" if session.engine_a.sub_queries_addressed else "#EF4444"}">{session.engine_a.sub_queries_addressed}</b></div>'
+                        f'<div style="color:#64748B; margin-bottom:4px;">Fake Close Detected: <br><b style="color:{fc_color}">{session.engine_a.is_fake_close}</b></div>'
+                        f'<div style="margin-top:8px;padding:5px;border-radius:6px;background:#F8FAFC;color:#212529;font-size:0.75rem;border:1px solid #E2E8F0;">State: {resolved}</div>'
                         f'</div>', unsafe_allow_html=True)
                         
         with ce_b:
@@ -390,9 +390,9 @@ class AgentPanel:
                 for c in claims:
                     warn = "#EF4444" if (c.is_unverifiable or c.is_impossible_promise or c.is_contradiction) else "#10B981"
                     status = "Failed" if (warn == "#EF4444") else "Verified"
-                    claims_html += f'<div style="padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">'
-                    claims_html += f'<div style="color:#E2E8F0; line-height: 1.2;">"{c.claim}"</div>'
-                    claims_html += f'<div style="color:{warn}; font-size:0.72rem; font-family:IBM Plex Mono; margin-top:3px;">[{status}] Conf: {c.confidence_score:.2f}</div>'
+                    claims_html += f'<div style="padding:8px 0; border-bottom:1px solid #F1F5F9;">'
+                    claims_html += f'<div style="color:#212529; line-height: 1.3; font-weight:500;">"{c.claim}"</div>'
+                    claims_html += f'<div style="color:{warn}; font-size:0.72rem; font-family:Sora,sans-serif; margin-top:4px; font-weight:600;">[{status}] Conf: {c.confidence_score:.2f}</div>'
                     claims_html += f'</div>'
                 st.markdown(f'<div class="glass-card" style="font-size:0.8rem; height: 160px; overflow-y: auto;">{claims_html}</div>', unsafe_allow_html=True)
             else:
@@ -438,7 +438,7 @@ class AgentPanel:
             st.markdown(
                 f'<div style="border-left:3px solid {breach_colour};'
                 f'padding:8px 12px;background:rgba(0,0,0,.2);border-radius:0 6px 6px 0;">'
-                f'<span style="color:{breach_colour};font-family:IBM Plex Mono;font-size:.8rem;">'
+                f'<span style="color:{breach_colour};font-family:Sora,sans-serif;font-weight:700;font-size:.8rem;">'
                 f'{breach_label}</span><br>'
                 f'<span style="font-size:.75rem;color:#64748B;">'
                 f'Groundedness: {result["groundedness"]:.2f} · '
@@ -489,7 +489,7 @@ class AgentPanel:
                 stars = "★" * fb.get("rating",3) + "☆"*(5-fb.get("rating",3))
                 st.markdown(
                     f'<div class="glass-card">'
-                    f'<div style="font-size:.7rem;color:#64748B;font-family:IBM Plex Mono;">'
+                    f'<div style="font-size:.72rem;color:#64748B;font-family:Sora,sans-serif;font-weight:600;">'
                     f'{fb.get("reviewer","—")} · {fb.get("timestamp","—")} · {stars}</div>'
                     f'<div style="font-size:.85rem;color:#94A3B8;margin-top:4px;">'
                     f'{fb.get("note","—")}</div></div>',
@@ -597,21 +597,21 @@ class AgentPanel:
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=times, y=values, mode="lines+markers",
-            line=dict(color="#8B5CF6", width=2),
-            marker=dict(size=6, color=[
+            line=dict(color="#EB643E", width=3),
+            marker=dict(size=8, color=[
                 "#EF4444" if v < 60 else "#F59E0B" if v < 75 else "#10B981"
                 for v in values
             ]),
-            fill="tozeroy", fillcolor="rgba(139,92,246,.07)",
+            fill="tozeroy", fillcolor="rgba(235,100,62,0.05)",
         ))
         fig.add_hline(y=60, line_dash="dash",
                       line_color="rgba(239,68,68,.4)",
                       annotation_text="Fail threshold")
         fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(15,23,42,.6)",
-            font=dict(family="IBM Plex Mono", color="#94A3B8", size=10),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#FFFFFF",
+            font=dict(family="Sora, sans-serif", color="#64748B", size=10),
             margin=dict(l=0, r=0, t=10, b=0), height=210,
-            yaxis=dict(range=[0,105], gridcolor="rgba(139,92,246,.1)"),
+            yaxis=dict(range=[0,105], gridcolor="rgba(0,0,0,0.05)"),
             xaxis=dict(gridcolor="rgba(0,0,0,0)"),
             showlegend=False,
         )
@@ -629,11 +629,11 @@ class AgentPanel:
         cols = st.columns(len(steps))
         for col, (num, name, sub) in zip(cols, steps):
             col.markdown(
-                f'<div style="border:1px solid rgba(139,92,246,.2);border-radius:6px;'
-                f'padding:7px;text-align:center;background:rgba(139,92,246,.05);">'
-                f'<div style="font-family:IBM Plex Mono;font-size:.58rem;color:#475569;">{num}</div>'
-                f'<div style="font-size:.75rem;font-weight:500;color:#8B5CF6;">{name}</div>'
-                f'<div style="font-size:.63rem;color:#64748B;">{sub}</div>'
+                f'<div style="border:1px solid rgba(235,100,62,0.15);border-radius:8px;'
+                f'padding:8px;text-align:center;background:#FFFFFF;box-shadow:var(--shadow);">'
+                f'<div style="font-family:Sora,sans-serif;font-size:.6rem;color:#94A3B8;font-weight:600;">{num}</div>'
+                f'<div style="font-size:.8rem;font-weight:700;color:#EB643E;margin:2px 0;">{name}</div>'
+                f'<div style="font-size:.65rem;color:#64748B;font-weight:500;">{sub}</div>'
                 f'</div>', unsafe_allow_html=True
             )
 

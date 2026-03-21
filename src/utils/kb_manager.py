@@ -34,7 +34,7 @@ CHUNK_SIZE     = 500      # Optimized for MiniLM context window.
 CHUNK_OVERLAP  = 50       # Preservation of context across boundaries.
 TOP_K          = 4        # Number of chunks provided to the LLM.
 EMBED_MODEL    = "all-MiniLM-L6-v2"
-MILVUS_DB      = "http://localhost:19530"
+MILVUS_DB      = "milvus_lite.db"
 META_PATH      = "data/kb/kb_meta.json"
 KB_DIR         = "data/kb"
 
@@ -57,7 +57,7 @@ GENERALISED_KB: list[dict] = [
         """),
     },
     {
-        "name":       "BPO Compliance Framework (ISO 9001:2015)",
+        "name":       "BPO Compliance Framework (ISO 9001-2015)",
         "collection": "compliance",
         "chunks":     98,
         "content": textwrap.dedent("""\
@@ -252,10 +252,13 @@ class KBManager:
     def _try_connect_store(self, collection: str) -> Optional[object]:
         """ Attempts a connection to a specific Milvus collection. """
         try:
-            from langchain_community.vectorstores import Milvus
+            from langchain_milvus import Milvus
+            # Milvus Lite on Windows prefers forward slashes or simple relative paths
+            uri = MILVUS_DB.replace("\\", "/")
+            
             store = Milvus(
                 embedding_function=self._embeddings,
-                connection_args={"uri": MILVUS_DB},
+                connection_args={"uri": uri},
                 collection_name=collection,
                 drop_old=False,
             )
@@ -446,7 +449,9 @@ class KBManager:
             return
 
         # Write text-based backup for keyword search fallback.
-        fallback_path = os.path.join(KB_DIR, f"{source}.chunks.txt")
+        # Sanitize name for Windows (replace : with -)
+        safe_source = source.replace(":", "-").replace("/", "_").replace("\\", "_")
+        fallback_path = os.path.join(KB_DIR, f"{safe_source}.chunks.txt")
         with open(fallback_path, "w", encoding="utf-8") as fh:
             for c in chunks:
                 fh.write(c + "\n---CHUNK---\n")
@@ -455,7 +460,7 @@ class KBManager:
             return
 
         try:
-            from langchain_community.vectorstores import Milvus
+            from langchain_milvus import Milvus
             from langchain_core.documents import Document
 
             docs = [
@@ -466,6 +471,9 @@ class KBManager:
                 for c in chunks
             ]
 
+            # Milvus Lite on Windows prefers forward slashes or simple relative paths
+            uri = MILVUS_DB.replace("\\", "/")
+            
             # Upsert into existing or new collection.
             if collection in self._stores and self._stores[collection] is not None:
                 self._stores[collection].add_documents(docs)
@@ -473,7 +481,7 @@ class KBManager:
                 store = Milvus.from_documents(
                     docs,
                     self._embeddings,
-                    connection_args={"uri": MILVUS_DB},
+                    connection_args={"uri": uri},
                     collection_name=collection,
                     drop_old=False,
                 )
