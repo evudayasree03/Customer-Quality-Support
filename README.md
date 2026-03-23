@@ -141,25 +141,11 @@ samix/
 ├── Dockerfile                 ← Docker config
 ├── docker-compose.yml         ← Docker Compose
 ├── requirements.txt           ← Python dependencies
-├── DEPLOYMENT.md              ← Deployment guide
-├── PRODUCTION_GUIDE.md        ← Production setup
-├── TROUBLESHOOTING.md         ← Troubleshooting
-└── QUICKSTART.md              ← Quick reference
 ```
 
 ---
 
-## 📚 Documentation
-
-| Document | Purpose |
-|----------|---------|
-| `QUICKSTART.md` | Quick reference & common tasks |
-| `DEPLOYMENT.md` | Deploy to Streamlit Cloud, Heroku, AWS, GCP |
-| `PRODUCTION_GUIDE.md` | Production setup & security |
-| `TROUBLESHOOTING.md` | Common issues & fixes |
-| `DEPLOYMENT_AWS.md` | Detailed AWS deployment (if available) |
-
----
+ 
 
 ## ✨ Features
 
